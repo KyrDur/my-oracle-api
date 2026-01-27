@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Oracle | 时空智慧</title>
+    <style>
+        :root {
+            --apple-blue: #0071E3;
+            --apple-black: #1D1D1F;
+            --apple-gray: #86868B;
+            --bg: #F5F5F7;
+        }
+
+        body {
+            background: var(--bg);
+            font-family: -apple-system, "SF Pro Display", "PingFang SC", sans-serif;
+            display: flex; justify-content: center; align-items: center;
+            min-height: 100vh; margin: 0; color: var(--apple-black);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(40px); border-radius: 44px;
+            padding: 60px; width: 440px; box-shadow: 0 30px 60px rgba(0,0,0,0.05);
+            border: 1px solid rgba(255, 255, 255, 0.5); text-align: center;
+        }
+
+        /* 顶部时钟与日期看板 */
+        .clock-container { margin-bottom: 45px; }
+        .clock { font-size: 72px; font-weight: 200; letter-spacing: -3px; margin: 0; }
+        
+        /* 这里的样式确保年份和农历显示得非常高级 */
+        .date-on-screen { 
+            font-size: 13px; color: var(--apple-blue); font-weight: 600; 
+            letter-spacing: 1px; margin-top: 10px; text-transform: uppercase;
+        }
+        .lunar-on-screen {
+            font-size: 11px; color: var(--apple-gray); margin-top: 4px;
+        }
+
+        .input-group { margin-bottom: 25px; text-align: left; }
+        label { font-size: 11px; color: var(--apple-gray); text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600; margin-left: 5px; }
+
+        input {
+            width: 100%; background: none; border: none; border-bottom: 1px solid #D2D2D7;
+            padding: 14px 5px; font-size: 17px; outline: none; margin-top: 5px; color: var(--apple-black);
+        }
+        input:focus { border-bottom-color: var(--apple-blue); }
+
+        button {
+            background: var(--apple-blue); color: white; border: none; padding: 18px;
+            border-radius: 980px; width: 100%; font-size: 17px; font-weight: 500;
+            cursor: pointer; transition: all 0.4s; margin-top: 25px;
+        }
+        button:hover { transform: scale(1.02); box-shadow: 0 10px 25px rgba(0,113,227,0.2); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        #result {
+            margin-top: 50px; padding-top: 40px; border-top: 1px solid #D2D2D7;
+            text-align: left; display: none; white-space: pre-line;
+            line-height: 2.4; font-size: 15.5px; color: #333336;
+            animation: appleFadeIn 1.2s cubic-bezier(0.25, 0.1, 0.25, 1);
+            letter-spacing: 0.03em;
+        }
+
+        @keyframes appleFadeIn { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+    <div class="glass-card">
+        <div class="clock-container">
+            <div class="clock" id="clock">00:00</div>
+            <div class="date-on-screen" id="dateText">2026年01月27日</div>
+            <div class="lunar-on-screen" id="lunarText">乙巳年 己丑月 辛卯日</div>
+        </div>
+        
+        <div class="input-group">
+            <label>地理位置</label>
+            <input type="text" id="city" value="深圳">
+        </div>
+        <div class="input-group">
+            <label>心中所求</label>
+            <input type="text" id="goal" placeholder="输入你想探寻的指引">
+        </div>
+        <button id="mainBtn" onclick="divine()">依时起卦</button>
+        <div id="result"></div>
+    </div>
+
+    <script>
+        // 1. 实时更新时钟与日期
+        function updateClock() {
+            const now = new Date();
+            // 更新时间
+            document.getElementById('clock').innerText = 
+                now.getHours().toString().padStart(2, '0') + ":" + 
+                now.getMinutes().toString().padStart(2, '0');
+            
+            // 更新公历日期
+            const y = now.getFullYear();
+            const m = (now.getMonth() + 1).toString().padStart(2, '0');
+            const d = now.getDate().toString().padStart(2, '0');
+            document.getElementById('dateText').innerText = `${y}年${m}月${d}日`;
+
+            // 农历与干支逻辑 (由于JS库较大，此处硬编码显示当下的 2026 状态，或由后端传回)
+            // 为保证用户体验，我们在这里通过代码固定当天的干支背景
+            document.getElementById('lunarText').innerText = "乙巳年 己丑月 辛卯日 · 腊月初九";
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        async function divine() {
+            const resArea = document.getElementById('result');
+            const btn = document.getElementById('mainBtn');
+            
+            resArea.style.display = 'block';
+            resArea.innerHTML = '<div style="text-align:center; color:#86868B;">正在调阅 2026 智慧档案...</div>';
+            btn.disabled = true;
+
+            try {
+                const response = await fetch('http://127.0.0.1:5000/api/meihua', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        "city": document.getElementById('city').value,
+                        "goal": document.getElementById('goal').value 
+                    })
+                });
+                const data = await response.json();
+                
+                // 仅清洗 Markdown 符号，完全保留你满意的逻辑内容
+                let cleanText = data.result.replace(/[#*`-]/g, '');
+                
+                resArea.innerHTML = `
+                    <div style="text-align:center; margin-bottom:30px;">
+                        <span style="text-transform:uppercase; font-size:11px; font-weight:700; letter-spacing:2.5px; color:var(--apple-blue);">Temporal Calibration</span>
+                        <br><small style="color:var(--apple-gray); font-size:12px;">太阳时校准：${data.solar_time}</small>
+                    </div>
+                    ${cleanText}
+                `;
+            } catch (e) {
+                resArea.innerHTML = '<div style="text-align:center; color:#FF3B30;">链路异常，请确认后端开启。</div>';
+            } finally {
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
