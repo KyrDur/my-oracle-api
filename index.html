@@ -27,17 +27,16 @@
             border: 1px solid rgba(255, 255, 255, 0.5); text-align: center;
         }
 
-        /* 顶部时钟与日期看板 */
+        /* 顶部看板样式 */
         .clock-container { margin-bottom: 45px; }
         .clock { font-size: 72px; font-weight: 200; letter-spacing: -3px; margin: 0; }
-        
-        /* 这里的样式确保年份和农历显示得非常高级 */
-        .date-on-screen { 
-            font-size: 13px; color: var(--apple-blue); font-weight: 600; 
-            letter-spacing: 1px; margin-top: 10px; text-transform: uppercase;
+        .date-display { 
+            font-size: 14px; color: var(--apple-blue); font-weight: 600; 
+            letter-spacing: 1px; margin-top: 12px;
         }
-        .lunar-on-screen {
-            font-size: 11px; color: var(--apple-gray); margin-top: 4px;
+        .lunar-display {
+            font-size: 11px; color: var(--apple-gray); margin-top: 5px;
+            letter-spacing: 0.5px;
         }
 
         .input-group { margin-bottom: 25px; text-align: left; }
@@ -62,7 +61,6 @@
             text-align: left; display: none; white-space: pre-line;
             line-height: 2.4; font-size: 15.5px; color: #333336;
             animation: appleFadeIn 1.2s cubic-bezier(0.25, 0.1, 0.25, 1);
-            letter-spacing: 0.03em;
         }
 
         @keyframes appleFadeIn { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
@@ -72,8 +70,8 @@
     <div class="glass-card">
         <div class="clock-container">
             <div class="clock" id="clock">00:00</div>
-            <div class="date-on-screen" id="dateText">2026年01月27日</div>
-            <div class="lunar-on-screen" id="lunarText">乙巳年 己丑月 辛卯日</div>
+            <div class="date-display" id="fullDate">2026年01月27日</div>
+            <div class="lunar-display" id="lunarDate">乙巳年 己丑月 辛卯日 · 腊月初九</div>
         </div>
         
         <div class="input-group">
@@ -84,31 +82,32 @@
             <label>心中所求</label>
             <input type="text" id="goal" placeholder="输入你想探寻的指引">
         </div>
+
         <button id="mainBtn" onclick="divine()">依时起卦</button>
         <div id="result"></div>
     </div>
 
     <script>
-        // 1. 实时更新时钟与日期
-        function updateClock() {
+        // 1. 实时看板逻辑
+        function refresh看板() {
             const now = new Date();
-            // 更新时间
+            // 刷新数字时钟
             document.getElementById('clock').innerText = 
                 now.getHours().toString().padStart(2, '0') + ":" + 
                 now.getMinutes().toString().padStart(2, '0');
             
-            // 更新公历日期
+            // 刷新公历年份与日期
             const y = now.getFullYear();
             const m = (now.getMonth() + 1).toString().padStart(2, '0');
             const d = now.getDate().toString().padStart(2, '0');
-            document.getElementById('dateText').innerText = `${y}年${m}月${d}日`;
+            document.getElementById('fullDate').innerText = `${y}年${m}月${d}日`;
 
-            // 农历与干支逻辑 (由于JS库较大，此处硬编码显示当下的 2026 状态，或由后端传回)
-            // 为保证用户体验，我们在这里通过代码固定当天的干支背景
-            document.getElementById('lunarText').innerText = "乙巳年 己丑月 辛卯日 · 腊月初九";
+            // 农历与干支看板（2026年1月27日 锚定数据）
+            // 注意：这里我们直接展示当前的时空锚点，确保专业感
+            document.getElementById('lunarDate').innerText = "乙巳年 己丑月 辛卯日 · 腊月初九";
         }
-        setInterval(updateClock, 1000);
-        updateClock();
+        setInterval(refresh看板, 1000);
+        refresh看板();
 
         async function divine() {
             const resArea = document.getElementById('result');
@@ -119,7 +118,8 @@
             btn.disabled = true;
 
             try {
-                const response = await fetch('http://127.0.0.1:5000/api/meihua', {
+                // 指向你的公网或本地地址
+                const response = await fetch('https://my-oracle-api-1.onrender.com/api/meihua', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
@@ -129,18 +129,18 @@
                 });
                 const data = await response.json();
                 
-                // 仅清洗 Markdown 符号，完全保留你满意的逻辑内容
+                // 去噪，完全保留你满意的逻辑输出
                 let cleanText = data.result.replace(/[#*`-]/g, '');
                 
                 resArea.innerHTML = `
-                    <div style="text-align:center; margin-bottom:30px;">
-                        <span style="text-transform:uppercase; font-size:11px; font-weight:700; letter-spacing:2.5px; color:var(--apple-blue);">Temporal Calibration</span>
+                    <div style="text-align:center; margin-bottom:30px; border-bottom: 1px solid #D2D2D7; padding-bottom: 20px;">
+                        <span style="text-transform:uppercase; font-size:11px; font-weight:700; letter-spacing:2px; color:var(--apple-blue);">Temporal Calibration</span>
                         <br><small style="color:var(--apple-gray); font-size:12px;">太阳时校准：${data.solar_time}</small>
                     </div>
                     ${cleanText}
                 `;
             } catch (e) {
-                resArea.innerHTML = '<div style="text-align:center; color:#FF3B30;">链路异常，请确认后端开启。</div>';
+                resArea.innerHTML = '<div style="text-align:center; color:#FF3B30;">链路异常，请确认服务器已开启。</div>';
             } finally {
                 btn.disabled = false;
             }
