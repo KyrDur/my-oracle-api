@@ -1,12 +1,20 @@
 import datetime
+import os
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from openai import OpenAI
 
-app = Flask(__name__)
-CORS(app) 
+@app.route("/", methods=["GET"])
+def health():
+    return "oracle backend alive"
 
-# 初始化 DeepSeek 客户端
+
+app = Flask(__name__)
+
+# 1. 核心修复：彻底放开跨域限制，确保手机端 GitHub Pages 能正常调取数据
+CORS(app, resources={r"/api/*": {"origins": "*"}})
+
+# 2. 核心修复：直接硬编码你的 API Key 确保云端直接起飞（请妥善保管）
 client = OpenAI(
     api_key="sk-f46b3617ec9747b2b1cdc0e2e82a4a45", 
     base_url="https://api.deepseek.com"
@@ -26,7 +34,7 @@ def meihua_qigua():
     solar_diff = (lng - 120) * 4
     solar_time = bj_time + datetime.timedelta(minutes=solar_diff)
     
-    # 2. 核心：重塑深度解读 Prompt
+    # 2. 锁定你最满意的解卦逻辑
     system_prompt = """
     # Role: 「六爻 × 人生潮汐」深度解卦引擎（硬核版）
     你是一位精通《增删卜易》的断卦宗师。
@@ -35,7 +43,6 @@ def meihua_qigua():
     你的目标不是简单的翻译，而是根据卦象技术指标，为用户的“心中所求”提供精准的商业/情感逻辑支撑。
     
     【输出结构 - 严格执行】
-    
     ### 【一】 卦象构造与古籍回响
     * 描述卦象（本卦、变卦、关键动爻）。
     * **必须引用**《增删卜易》或《卜筮正宗》的原典断语。
@@ -77,7 +84,10 @@ def meihua_qigua():
             "solar_time": solar_time.strftime('%H:%M')
         })
     except Exception as e:
-        return jsonify({"ok": False, "result": f"时空链路抖动: {str(e)}"})
+        # 增加错误捕获，方便手机端排查
+        return jsonify({"ok": False, "result": f"时空链路异常: {str(e)}"})
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    # 获取 Render 分配的端口，如果没有就默认 5000
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
