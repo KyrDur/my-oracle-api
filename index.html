@@ -118,8 +118,8 @@
             btn.disabled = true;
 
             try {
-                // 指向你的公网或本地地址
-                const response = await fetch('https://my-oracle-api-1.onrender.com/api/meihua', {
+                // 前端与 API 同源，部署到哪里都不需要修改地址
+                const response = await fetch('/api/meihua', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
